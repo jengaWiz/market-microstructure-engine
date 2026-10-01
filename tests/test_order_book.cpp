@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <vector>
+
 #include "market/MarketEvent.hpp"
 #include "market/OrderBook.hpp"
 
@@ -96,6 +98,75 @@ TEST(OrderBookTest, RemovingMissingLevelDoesNothing) {
     EXPECT_EQ(book.bidLevelCount(), 1u);
     EXPECT_EQ(book.bestBid()->quantity, 5);
     EXPECT_EQ(book.askLevelCount(), 0u);
+}
+
+TEST(OrderBookTest, BestBidIsHighestAndBestAskIsLowest) {
+    OrderBook book;
+    // Out of order on purpose: the map must keep each side sorted.
+    book.apply(update(Side::Buy, 98, 1));
+    book.apply(update(Side::Buy, 100, 2));
+    book.apply(update(Side::Buy, 99, 3));
+    book.apply(update(Side::Sell, 103, 4));
+    book.apply(update(Side::Sell, 101, 5));
+    book.apply(update(Side::Sell, 102, 6));
+
+    EXPECT_EQ(book.bestBid()->price, 100);
+    EXPECT_EQ(book.bestAsk()->price, 101);
+}
+
+TEST(OrderBookTest, RemovingBestLevelPromotesNextBest) {
+    OrderBook book;
+    book.apply(update(Side::Buy, 100, 2));
+    book.apply(update(Side::Buy, 99, 3));
+    book.apply(update(Side::Sell, 101, 5));
+    book.apply(update(Side::Sell, 102, 6));
+
+    book.apply(update(Side::Buy, 100, 0));
+    book.apply(update(Side::Sell, 101, 0));
+
+    EXPECT_EQ(book.bestBid()->price, 99);
+    EXPECT_EQ(book.bestAsk()->price, 102);
+}
+
+TEST(OrderBookTest, TopLevelsAreBestFirst) {
+    OrderBook book;
+    book.apply(update(Side::Buy, 98, 1));
+    book.apply(update(Side::Buy, 100, 2));
+    book.apply(update(Side::Buy, 99, 3));
+    book.apply(update(Side::Sell, 103, 4));
+    book.apply(update(Side::Sell, 101, 5));
+    book.apply(update(Side::Sell, 102, 6));
+
+    const std::vector<Order> bids = book.topBids(3);
+    ASSERT_EQ(bids.size(), 3u);
+    EXPECT_EQ(bids[0].price, 100);
+    EXPECT_EQ(bids[1].price, 99);
+    EXPECT_EQ(bids[2].price, 98);
+    EXPECT_EQ(bids[1].quantity, 3);
+
+    const std::vector<Order> asks = book.topAsks(3);
+    ASSERT_EQ(asks.size(), 3u);
+    EXPECT_EQ(asks[0].price, 101);
+    EXPECT_EQ(asks[1].price, 102);
+    EXPECT_EQ(asks[2].price, 103);
+    EXPECT_EQ(asks[1].quantity, 6);
+}
+
+TEST(OrderBookTest, TopLevelsRespectDepth) {
+    OrderBook book;
+    book.apply(update(Side::Buy, 100, 1));
+    book.apply(update(Side::Buy, 99, 1));
+    book.apply(update(Side::Buy, 98, 1));
+
+    EXPECT_TRUE(book.topBids(0).empty());
+
+    const std::vector<Order> topTwo = book.topBids(2);
+    ASSERT_EQ(topTwo.size(), 2u);
+    EXPECT_EQ(topTwo[0].price, 100);
+    EXPECT_EQ(topTwo[1].price, 99);
+
+    // Asking for more levels than exist returns all of them.
+    EXPECT_EQ(book.topBids(10).size(), 3u);
 }
 
 TEST(OrderBookTest, ClearRemovesEveryLevel) {
