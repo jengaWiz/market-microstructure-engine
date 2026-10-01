@@ -3,13 +3,42 @@
 namespace mme {
 
 void OrderBook::apply(const MarketEvent& event) {
-    // TODO(Phase 2): Implement book updates.
-    //   - Snapshot: set the level (the caller clears the book before a new
-    //     snapshot starts).
-    //   - Update:   quantity > 0 -> set the level; quantity == 0 -> erase it.
-    //   - Trade:    does not change an L2 book directly (the exchange sends a
-    //     separate Update), so ignore it here.
-    (void)event;
+    // TODO(Phase 2): Reject this explicitly and report it to the caller.
+    if (event.quantity < 0) {
+        return;
+    }
+
+    switch (event.type) {
+        case EventType::Update:
+            setLevel(event.side, event.price, event.quantity);
+            break;
+        case EventType::Snapshot:
+            // TODO(Phase 2): Set the level (the caller clears the book before
+            // a new snapshot starts).
+            break;
+        case EventType::Trade:
+            // TODO(Phase 2): Trades don't change an L2 book directly (the
+            // exchange sends a separate Update), so they will be ignored.
+            break;
+    }
+}
+
+void OrderBook::setLevel(Side side, Price price, Quantity quantity) {
+    // The quantity is the new total, so we overwrite instead of adding.
+    // std::map keeps each side sorted, so the best price stays first.
+    if (side == Side::Buy) {
+        if (quantity == 0) {
+            bids_.erase(price);
+        } else {
+            bids_[price] = quantity;
+        }
+    } else {
+        if (quantity == 0) {
+            asks_.erase(price);
+        } else {
+            asks_[price] = quantity;
+        }
+    }
 }
 
 void OrderBook::clear() {
