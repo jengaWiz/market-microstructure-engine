@@ -8,12 +8,14 @@
 
 #include "market/MarketEvent.hpp"
 #include "market/Order.hpp"
+#include "market/Units.hpp"
 
 namespace mme {
 
 // A local Level 2 order book for a single instrument.
 //
-// Each side is a sorted map of price -> total quantity at that price:
+// Each side is a sorted map of price -> total quantity at that price, both
+// stored as whole numbers (ticks and lots, see Units.hpp):
 //   - bids are sorted highest price first (the best bid is the highest)
 //   - asks are sorted lowest price first  (the best ask is the lowest)
 //
@@ -45,10 +47,8 @@ public:
     std::vector<Order> topAsks(std::size_t depth) const;
 
 private:
-    // TODO(Phase 2): Using double as a map key is fine for learning but
-    // fragile in general. Revisit together with integer price ticks.
-    std::map<double, double, std::greater<double>> bids_;  // price -> quantity
-    std::map<double, double> asks_;                        // price -> quantity
+    std::map<Price, Quantity, std::greater<Price>> bids_;  // price -> quantity
+    std::map<Price, Quantity> asks_;                       // price -> quantity
 };
 
 }  // namespace mme

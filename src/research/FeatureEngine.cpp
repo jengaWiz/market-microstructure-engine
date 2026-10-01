@@ -2,12 +2,14 @@
 
 namespace mme {
 
+FeatureEngine::FeatureEngine(TickSize tickSize) : tickSize_(tickSize) {}
+
 std::optional<double> FeatureEngine::bestBid(const OrderBook& book) const {
     const std::optional<Order> level = book.bestBid();
     if (!level) {
         return std::nullopt;
     }
-    return level->price;
+    return tickSize_.toReal(level->price);
 }
 
 std::optional<double> FeatureEngine::bestAsk(const OrderBook& book) const {
@@ -15,17 +17,19 @@ std::optional<double> FeatureEngine::bestAsk(const OrderBook& book) const {
     if (!level) {
         return std::nullopt;
     }
-    return level->price;
+    return tickSize_.toReal(level->price);
 }
 
 std::optional<double> FeatureEngine::midPrice(const OrderBook& book) const {
     // TODO(Phase 6): Return (bestBid + bestAsk) / 2 when both sides exist.
+    // Add the two prices in ticks first, then convert the result once.
     (void)book;
     return std::nullopt;
 }
 
 std::optional<double> FeatureEngine::spread(const OrderBook& book) const {
     // TODO(Phase 6): Return bestAsk - bestBid when both sides exist.
+    // Subtract in ticks (exact), then convert the result once.
     (void)book;
     return std::nullopt;
 }
@@ -34,6 +38,8 @@ std::optional<double> FeatureEngine::imbalance(const OrderBook& book,
                                                std::size_t depth) const {
     // TODO(Phase 6): Sum quantities from book.topBids(depth) and
     // book.topAsks(depth), then return (bid - ask) / (bid + ask).
+    // The sums are exact whole numbers of lots; only the final division needs
+    // a double. Lot size cancels out of the ratio, so it isn't needed here.
     // Return std::nullopt when the total quantity is zero.
     (void)book;
     (void)depth;

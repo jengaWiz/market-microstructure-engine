@@ -4,6 +4,7 @@
 #include <functional>
 
 #include "market/Order.hpp"
+#include "market/Units.hpp"
 
 namespace mme {
 
@@ -48,8 +49,8 @@ struct MarketEvent {
     // Nanoseconds since the Unix epoch (1970-01-01 00:00:00 UTC).
     std::int64_t timestamp = 0;
     EventType type = EventType::Update;
-    double price = 0.0;
-    double quantity = 0.0;
+    Price price = 0;        // in ticks, see Units.hpp
+    Quantity quantity = 0;  // in lots,  see Units.hpp
     Side side = Side::Buy;
 };
 

@@ -8,10 +8,11 @@
 namespace mme {
 
 TEST(OrderTest, StoresPriceQuantityAndSide) {
-    const Order order{60000.5, 1.25, Side::Sell};
+    // $60,000.50 in $0.01 ticks, 1.25 BTC in 1e-8 BTC lots.
+    const Order order{6'000'050, 125'000'000, Side::Sell};
 
-    EXPECT_DOUBLE_EQ(order.price, 60000.5);
-    EXPECT_DOUBLE_EQ(order.quantity, 1.25);
+    EXPECT_EQ(order.price, 6'000'050);
+    EXPECT_EQ(order.quantity, 125'000'000);
     EXPECT_EQ(order.side, Side::Sell);
 }
 
@@ -22,12 +23,12 @@ TEST(OrderTest, SideHasReadableName) {
 
 TEST(MarketEventTest, StoresAllFields) {
     const MarketEvent event{1'700'000'000'000'000'000, EventType::Trade,
-                            60000.0, 0.5, Side::Buy};
+                            6'000'000, 50'000'000, Side::Buy};
 
     EXPECT_EQ(event.timestamp, 1'700'000'000'000'000'000);
     EXPECT_EQ(event.type, EventType::Trade);
-    EXPECT_DOUBLE_EQ(event.price, 60000.0);
-    EXPECT_DOUBLE_EQ(event.quantity, 0.5);
+    EXPECT_EQ(event.price, 6'000'000);
+    EXPECT_EQ(event.quantity, 50'000'000);
     EXPECT_EQ(event.side, Side::Buy);
 }
 
