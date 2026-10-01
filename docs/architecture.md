@@ -6,6 +6,7 @@ This document describes how the engine is organized and why. It covers the targe
 
 | Component        | Location                  | Responsibility |
 |------------------|---------------------------|----------------|
+| `Units`          | `include/market/`         | `Price` (ticks) and `Quantity` (lots) as whole numbers, plus `TickSize` / `LotSize` to convert to and from real values. |
 | `Order`          | `include/market/`         | One price level: price, quantity, side. |
 | `MarketEvent`    | `include/market/`         | One exchange-independent event: snapshot level, update, or trade. The single data type that flows through the pipeline. |
 | `OrderBook`      | `include/market/`         | Maintains bids and asks for one instrument by applying `MarketEvent`s. Answers "what is the best bid / best ask / top N levels?" |
@@ -101,9 +102,21 @@ All exchange-specific code stays inside `src/feed/`. That includes:
 
 Nothing outside `feed/` should ever mention a specific exchange. If we support a second exchange later, it gets its own translation code in `feed/`, and every other component stays unchanged.
 
+## Whole-number prices and quantities
+
+Inside the engine, prices are whole numbers of **ticks** and quantities are whole numbers of **lots**, the smallest steps the exchange allows. For BTC-USD, one tick is $0.01 and one lot is 0.00000001 BTC, so $60,000.05 is stored as `6000005` and 2.5 BTC as `250000000`.
+
+Doubles can't represent most decimal prices exactly (`0.1 + 0.2 != 0.3`). That would make two equal prices land on different order-book levels, and make replays drift from the original data. Whole numbers are always exact.
+
+Conversion to and from real values happens only at the edges:
+
+- **In:** `MarketDataFeed` converts exchange prices and sizes into ticks and lots (Phase 3).
+- **Out:** `FeatureEngine` converts results back to real units for research output.
+
+Everything in between, including `OrderBook`, `EventRecorder`, and `ReplayEngine`, works only with whole numbers.
+
 ## Deliberate simplifications (for now)
 
-- Prices and quantities are `double`. Integer price ticks may replace them once the order book is implemented (see the TODO in `Order.hpp`).
 - One instrument per `OrderBook`, with no symbol field on `MarketEvent` yet.
 - The recording format will be a simple CSV, which is human-readable and easy to load in Python or a spreadsheet for Phase 7.
 - No external dependencies besides GoogleTest (tests only).
