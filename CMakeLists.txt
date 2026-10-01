@@ -34,6 +34,7 @@ endif()
 # ---------------------------------------------------------------------------
 add_library(mme_core
     src/market/OrderBook.cpp
+    src/market/Units.cpp
     src/feed/MarketDataFeed.cpp
     src/recorder/EventRecorder.cpp
     src/replay/ReplayEngine.cpp
@@ -72,6 +73,7 @@ if(MME_BUILD_TESTS)
 
     add_executable(mme_tests
         tests/test_market_event.cpp
+        tests/test_units.cpp
         tests/test_order_book.cpp
         tests/test_replay_engine.cpp
         tests/test_feature_engine.cpp
