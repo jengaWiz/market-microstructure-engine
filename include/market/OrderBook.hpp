@@ -24,7 +24,14 @@ namespace mme {
 class OrderBook {
 public:
     // Applies one market event to the book.
-    // TODO(Phase 2): Not implemented yet; currently does nothing.
+    //
+    // Update: `quantity` is the NEW total at `price`, not a change.
+    //   - quantity > 0  -> the level is set to that quantity (added if new,
+    //                      overwritten if it already exists)
+    //   - quantity == 0 -> the level is removed (a no-op if it isn't there)
+    //
+    // TODO(Phase 2): Handle Snapshot and Trade events (they are ignored for
+    // now), and reject invalid events such as a negative quantity.
     void apply(const MarketEvent& event);
 
     // Removes every price level from both sides.
@@ -47,6 +54,10 @@ public:
     std::vector<Order> topAsks(std::size_t depth) const;
 
 private:
+    // Sets one price level on the given side, or removes it if `quantity`
+    // is 0.
+    void setLevel(Side side, Price price, Quantity quantity);
+
     std::map<Price, Quantity, std::greater<Price>> bids_;  // price -> quantity
     std::map<Price, Quantity> asks_;                       // price -> quantity
 };
