@@ -41,8 +41,14 @@ public:
     //   Changing the book on the trade too would count the change twice.
     //   Trades still matter for research, just not for the book.
     //
-    // TODO(Phase 2): Reject invalid events such as a negative quantity.
-    void apply(const MarketEvent& event);
+    // Returns true if the event was valid, false if it was rejected. A
+    // rejected event leaves the book unchanged. An event is invalid if:
+    //   - its price is 0 or below
+    //   - its quantity is below 0
+    //   - it is a Trade with a quantity of 0 (nothing was traded)
+    // A rejected event usually means corrupt or misread data, so the caller
+    // should treat the book as unreliable and resync from a fresh snapshot.
+    bool apply(const MarketEvent& event);
 
     // Removes every price level from both sides.
     //
@@ -67,7 +73,18 @@ public:
     std::vector<Order> topBids(std::size_t depth) const;
     std::vector<Order> topAsks(std::size_t depth) const;
 
+    // True when the best bid is at or above the best ask.
+    //
+    // A real exchange never stays like this: those orders would trade with
+    // each other immediately. So a crossed local book means we missed or
+    // misread an update, and the caller should resync from a fresh snapshot.
+    // A book with an empty side can't be crossed.
+    bool isCrossed() const;
+
 private:
+    // True if `event` passes the checks described on apply().
+    static bool isValid(const MarketEvent& event);
+
     // Sets one price level on the given side, or removes it if `quantity`
     // is 0.
     void setLevel(Side side, Price price, Quantity quantity);
