@@ -276,6 +276,50 @@ TEST(OrderBookTest, MixedEventTimelineEndsInExpectedBook) {
     EXPECT_EQ(bids[1].quantity, qty(2));
 }
 
+TEST(OrderBookTest, ValidEventsAreAccepted) {
+    OrderBook book;
+
+    EXPECT_TRUE(book.apply(snapshot(Side::Buy, 100, 2)));
+    EXPECT_TRUE(book.apply(update(Side::Sell, 101, 3)));
+    EXPECT_TRUE(book.apply(update(Side::Sell, 101, 0)));  // removal is valid
+    EXPECT_TRUE(book.apply(trade(Side::Buy, 101, 1)));
+}
+
+TEST(OrderBookTest, RejectsNonPositivePrice) {
+    OrderBook book;
+    book.apply(update(Side::Buy, 100, 2));
+
+    EXPECT_FALSE(book.apply(update(Side::Buy, 0, 5)));
+    EXPECT_FALSE(book.apply(update(Side::Sell, -1, 5)));
+    EXPECT_FALSE(book.apply(snapshot(Side::Buy, 0, 5)));
+    EXPECT_FALSE(book.apply(trade(Side::Buy, -100, 1)));
+
+    // The book is exactly as it was.
+    EXPECT_EQ(book.bidLevelCount(), 1u);
+    EXPECT_EQ(book.askLevelCount(), 0u);
+    EXPECT_EQ(book.bestBid()->price, 100);
+}
+
+TEST(OrderBookTest, RejectsNegativeQuantity) {
+    OrderBook book;
+    book.apply(update(Side::Buy, 100, 2));
+
+    EXPECT_FALSE(book.apply(update(Side::Buy, 100, -1)));
+    EXPECT_FALSE(book.apply(snapshot(Side::Sell, 101, -5)));
+    EXPECT_FALSE(book.apply(trade(Side::Buy, 100, -1)));
+
+    EXPECT_EQ(book.bidLevelCount(), 1u);
+    EXPECT_EQ(book.bestBid()->quantity, 2);  // not changed or removed
+    EXPECT_EQ(book.askLevelCount(), 0u);
+}
+
+TEST(OrderBookTest, RejectsZeroQuantityTrade) {
+    OrderBook book;
+
+    EXPECT_FALSE(book.apply(trade(Side::Buy, 100, 0)));
+    EXPECT_TRUE(book.empty());
+}
+
 TEST(OrderBookTest, ClearRemovesEveryLevel) {
     OrderBook book;
     book.apply(update(Side::Buy, 100, 5));
