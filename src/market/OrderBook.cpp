@@ -10,15 +10,15 @@ void OrderBook::apply(const MarketEvent& event) {
 
     switch (event.type) {
         case EventType::Update:
+        case EventType::Snapshot:
+            // A snapshot level and an update both mean "the total at this
+            // price is now `quantity`". The caller has already cleared the
+            // book if this snapshot replaces an old one.
             setLevel(event.side, event.price, event.quantity);
             break;
-        case EventType::Snapshot:
-            // TODO(Phase 2): Set the level (the caller clears the book before
-            // a new snapshot starts).
-            break;
         case EventType::Trade:
-            // TODO(Phase 2): Trades don't change an L2 book directly (the
-            // exchange sends a separate Update), so they will be ignored.
+            // The exchange sends a separate Update for any level a trade
+            // changed, so applying the trade here would double-count it.
             break;
     }
 }

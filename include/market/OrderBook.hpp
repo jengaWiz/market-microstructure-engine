@@ -30,11 +30,25 @@ public:
     //                      overwritten if it already exists)
     //   - quantity == 0 -> the level is removed (a no-op if it isn't there)
     //
-    // TODO(Phase 2): Handle Snapshot and Trade events (they are ignored for
-    // now), and reject invalid events such as a negative quantity.
+    // Snapshot: one level from a full copy of the exchange's book. It is set
+    //   exactly like an Update. The book can't tell where one snapshot ends
+    //   and the next begins, so the CALLER must call clear() before applying
+    //   a new snapshot. Otherwise levels missing from the new snapshot would
+    //   stay in the book.
+    //
+    // Trade: leaves the book unchanged. When a trade uses up quantity at a
+    //   level, the exchange also sends an Update with that level's new total.
+    //   Changing the book on the trade too would count the change twice.
+    //   Trades still matter for research, just not for the book.
+    //
+    // TODO(Phase 2): Reject invalid events such as a negative quantity.
     void apply(const MarketEvent& event);
 
     // Removes every price level from both sides.
+    //
+    // Call this before applying a new snapshot: a snapshot replaces the whole
+    // book rather than changing it. In live mode the MarketDataFeed does this
+    // automatically whenever a snapshot message arrives (Phase 3).
     void clear();
 
     // True when the book has no bids and no asks.
