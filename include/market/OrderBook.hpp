@@ -36,8 +36,12 @@ public:
     //   a new snapshot. Otherwise levels missing from the new snapshot would
     //   stay in the book.
     //
-    // TODO(Phase 2): Handle Trade events (ignored for now), and reject
-    // invalid events such as a negative quantity.
+    // Trade: leaves the book unchanged. When a trade uses up quantity at a
+    //   level, the exchange also sends an Update with that level's new total.
+    //   Changing the book on the trade too would count the change twice.
+    //   Trades still matter for research, just not for the book.
+    //
+    // TODO(Phase 2): Reject invalid events such as a negative quantity.
     void apply(const MarketEvent& event);
 
     // Removes every price level from both sides.

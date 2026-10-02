@@ -19,6 +19,10 @@ MarketEvent snapshot(Side side, Price price, Quantity quantity) {
     return MarketEvent{0, EventType::Snapshot, price, quantity, side};
 }
 
+MarketEvent trade(Side aggressor, Price price, Quantity quantity) {
+    return MarketEvent{0, EventType::Trade, price, quantity, aggressor};
+}
+
 }  // namespace
 
 TEST(OrderBookTest, NewBookIsEmpty) {
@@ -217,6 +221,23 @@ TEST(OrderBookTest, ClearThenSnapshotRemovesStaleLevels) {
     ASSERT_EQ(bids.size(), 1u);
     EXPECT_EQ(bids[0].price, 100);
     EXPECT_EQ(bids[0].quantity, 3);
+}
+
+TEST(OrderBookTest, TradeDoesNotChangeBook) {
+    OrderBook book;
+    book.apply(snapshot(Side::Buy, 100, 2));
+    book.apply(snapshot(Side::Sell, 101, 3));
+
+    // A buyer takes 1 lot at the best ask. The book must not change: the
+    // exchange will send its own Update for the ask at 101.
+    book.apply(trade(Side::Buy, 101, 1));
+    // A trade at a price with no level must not create one either.
+    book.apply(trade(Side::Sell, 95, 1));
+
+    EXPECT_EQ(book.bidLevelCount(), 1u);
+    EXPECT_EQ(book.askLevelCount(), 1u);
+    EXPECT_EQ(book.bestBid()->quantity, 2);
+    EXPECT_EQ(book.bestAsk()->quantity, 3);
 }
 
 TEST(OrderBookTest, ClearRemovesEveryLevel) {
