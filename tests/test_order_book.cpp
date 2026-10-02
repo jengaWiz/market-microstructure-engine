@@ -320,6 +320,47 @@ TEST(OrderBookTest, RejectsZeroQuantityTrade) {
     EXPECT_TRUE(book.empty());
 }
 
+TEST(OrderBookTest, EmptyOrOneSidedBookIsNotCrossed) {
+    OrderBook book;
+    EXPECT_FALSE(book.isCrossed());
+
+    book.apply(update(Side::Buy, 100, 1));
+    EXPECT_FALSE(book.isCrossed());  // bids only
+
+    book.clear();
+    book.apply(update(Side::Sell, 100, 1));
+    EXPECT_FALSE(book.isCrossed());  // asks only
+}
+
+TEST(OrderBookTest, NormalBookIsNotCrossed) {
+    OrderBook book;
+    book.apply(update(Side::Buy, 100, 1));
+    book.apply(update(Side::Sell, 101, 1));
+
+    EXPECT_FALSE(book.isCrossed());
+}
+
+TEST(OrderBookTest, BidEqualToAskIsCrossed) {
+    OrderBook book;
+    book.apply(update(Side::Buy, 100, 1));
+    book.apply(update(Side::Sell, 100, 1));
+
+    // A buyer and a seller at the same price would have traded.
+    EXPECT_TRUE(book.isCrossed());
+}
+
+TEST(OrderBookTest, BidAboveAskIsCrossed) {
+    OrderBook book;
+    book.apply(update(Side::Buy, 102, 1));
+    book.apply(update(Side::Sell, 101, 1));
+
+    EXPECT_TRUE(book.isCrossed());
+
+    // Once the stale level is removed, the book is consistent again.
+    book.apply(update(Side::Buy, 102, 0));
+    EXPECT_FALSE(book.isCrossed());
+}
+
 TEST(OrderBookTest, ClearRemovesEveryLevel) {
     OrderBook book;
     book.apply(update(Side::Buy, 100, 5));
