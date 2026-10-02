@@ -3,7 +3,7 @@
 [![CI](https://github.com/jengaWiz/market-microstructure-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/jengaWiz/market-microstructure-engine/actions/workflows/ci.yml)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg)
 ![CMake](https://img.shields.io/badge/build-CMake-064F8C.svg)
-![Status](https://img.shields.io/badge/status-Phase%201%20of%208-orange.svg)
+![Status](https://img.shields.io/badge/status-Phase%202%20of%208-orange.svg)
 
 A small, beginner-friendly C++20 project for studying how crypto markets behave at the level of individual order-book changes.
 
@@ -56,13 +56,14 @@ The full design, and the reasoning behind it, is in [docs/architecture.md](docs/
 
 ## Current progress
 
-**Phase 1 of 8 is complete: project structure and domain models.**
+**Phases 1 and 2 of 8 are complete: project structure and a working order book.**
 
 | Component        | State |
 |------------------|-------|
-| Build system     | ✅ CMake project, strict warnings, CI on Linux and macOS |
+| Build system     | ✅ CMake project, strict warnings, CI on Linux and macOS, benchmark target |
 | `Order`, `MarketEvent` | ✅ Domain types defined and tested |
-| `OrderBook`      | 🟡 Data structures and read-only queries (`bestBid`, `bestAsk`, `topBids`, ...) work; `apply()` is a stub |
+| Units            | ✅ Whole-number prices (ticks) and quantities (lots), with exact conversion to and from real values |
+| `OrderBook`      | ✅ Applies snapshot, update, and trade events; rejects invalid events; detects a crossed (out-of-sync) book. Benchmarked at ~17M events/sec |
 | `FeatureEngine`  | 🟡 `bestBid` / `bestAsk` work; `midPrice`, `spread`, `imbalance` are stubs |
 | `MarketDataFeed` | ⬜ Interface only, no network code |
 | `EventRecorder`  | ⬜ Interface only, no file I/O |
@@ -71,14 +72,24 @@ The full design, and the reasoning behind it, is in [docs/architecture.md](docs/
 
 Every component already has its final header interface and a placeholder implementation, so the whole pipeline compiles and runs end to end today. Search for `TODO(Phase N)` to see exactly where each remaining piece goes.
 
-Running the app today prints:
+The live feed doesn't exist yet, so the app runs a short demo: a hand-made BTC-USD sequence (snapshot, updates, a trade) goes through the same event handler the feed will use. Running it prints:
 
 ```
 Market Microstructure Research Engine
-Status: Phase 1 (project skeleton)
+Status: Phase 2 (order book)
 
 Live feed for BTC-USD is not implemented yet (Phase 3).
-Order book is empty.
+Running a demo event sequence instead.
+
+Order book after 8 events:
+  ASK  $60015.00  3.00000000 BTC
+  ASK  $60010.00  2.00000000 BTC
+  ------------------------------
+  BID  $60005.00  0.50000000 BTC
+  BID  $60000.00  2.00000000 BTC
+  BID  $59995.00  4.00000000 BTC
+
+Best bid: $60005.00   Best ask: $60010.00
 ```
 
 ## Roadmap
@@ -86,8 +97,8 @@ Order book is empty.
 | Phase | Goal                                   | Status      |
 |-------|----------------------------------------|-------------|
 | 1     | Project structure and domain models    | ✅ Done     |
-| 2     | Order book implementation              | ⏭️ Next     |
-| 3     | Live market-data connection            |             |
+| 2     | Order book implementation              | ✅ Done     |
+| 3     | Live market-data connection            | ⏭️ Next     |
 | 4     | Event recording                        |             |
 | 5     | Historical replay                      |             |
 | 6     | Feature calculation                    |             |
