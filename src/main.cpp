@@ -28,6 +28,8 @@ int main() {
 
     // Every event, live or replayed, goes through this one function.
     feed.setEventHandler([&](const mme::MarketEvent& event) {
+        // TODO(Phase 3): If apply() rejects an event, log it and request a
+        // fresh snapshot, since the book may no longer match the exchange.
         book.apply(event);
         recorder.record(event);
         // TODO(Phase 6): Compute features here and write them to

@@ -2,10 +2,9 @@
 
 namespace mme {
 
-void OrderBook::apply(const MarketEvent& event) {
-    // TODO(Phase 2): Reject this explicitly and report it to the caller.
-    if (event.quantity < 0) {
-        return;
+bool OrderBook::apply(const MarketEvent& event) {
+    if (!isValid(event)) {
+        return false;
     }
 
     switch (event.type) {
@@ -21,6 +20,19 @@ void OrderBook::apply(const MarketEvent& event) {
             // changed, so applying the trade here would double-count it.
             break;
     }
+    return true;
+}
+
+bool OrderBook::isValid(const MarketEvent& event) {
+    if (event.price <= 0 || event.quantity < 0) {
+        return false;
+    }
+    // A quantity of 0 means "remove this level" for book events, but a trade
+    // of nothing makes no sense.
+    if (event.type == EventType::Trade && event.quantity == 0) {
+        return false;
+    }
+    return true;
 }
 
 void OrderBook::setLevel(Side side, Price price, Quantity quantity) {
