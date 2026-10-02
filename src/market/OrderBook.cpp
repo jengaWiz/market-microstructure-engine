@@ -108,4 +108,11 @@ std::vector<Order> OrderBook::topAsks(std::size_t depth) const {
     return levels;
 }
 
+bool OrderBook::isCrossed() const {
+    if (bids_.empty() || asks_.empty()) {
+        return false;
+    }
+    return bids_.begin()->first >= asks_.begin()->first;
+}
+
 }  // namespace mme

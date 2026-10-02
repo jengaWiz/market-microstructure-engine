@@ -73,6 +73,14 @@ public:
     std::vector<Order> topBids(std::size_t depth) const;
     std::vector<Order> topAsks(std::size_t depth) const;
 
+    // True when the best bid is at or above the best ask.
+    //
+    // A real exchange never stays like this: those orders would trade with
+    // each other immediately. So a crossed local book means we missed or
+    // misread an update, and the caller should resync from a fresh snapshot.
+    // A book with an empty side can't be crossed.
+    bool isCrossed() const;
+
 private:
     // True if `event` passes the checks described on apply().
     static bool isValid(const MarketEvent& event);
