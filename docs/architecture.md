@@ -96,7 +96,7 @@ All exchange-specific code stays inside `src/feed/`. That includes:
 
 - WebSocket URLs and subscription messages
 - JSON parsing and field names
-- converting string prices and ISO timestamps into `double` and nanoseconds
+- converting string prices and sizes into ticks and lots, and ISO timestamps into nanoseconds
 - turning one snapshot message into many `Snapshot` events
 - handling sequence numbers, gaps, and resubscribing
 
@@ -115,8 +115,28 @@ Conversion to and from real values happens only at the edges:
 
 Everything in between, including `OrderBook`, `EventRecorder`, and `ReplayEngine`, works only with whole numbers.
 
+## Keeping the book in sync
+
+The exchange holds the real order book; `OrderBook` is our local copy. It stays correct only if it sees every change, in order.
+
+| Event | What `OrderBook::apply()` does |
+|-------|--------------------------------|
+| `Snapshot` | Sets the level. One exchange snapshot arrives as many `Snapshot` events. |
+| `Update` | Sets the level to the new total; a quantity of 0 removes it. |
+| `Trade` | Nothing. The exchange sends a separate `Update` for any level a trade changed, so applying the trade too would double-count it. |
+
+**Snapshots replace the book.** The book can't tell where one snapshot ends and the next begins, so whoever feeds it events calls `clear()` first. In live mode that's `MarketDataFeed`, automatically, whenever a snapshot message arrives.
+
+**Detecting drift.** Two signals mean our copy no longer matches the exchange:
+
+- `apply()` returns `false`: the event was invalid (price ≤ 0, negative quantity, or a zero-size trade) and the book was left unchanged.
+- `isCrossed()` returns `true`: the best bid is at or above the best ask, which a real exchange never allows to persist.
+
+Either way, the fix is the same: request a fresh snapshot, `clear()`, and rebuild. Wiring that up belongs to the feed (Phase 3).
+
 ## Deliberate simplifications (for now)
 
 - One instrument per `OrderBook`, with no symbol field on `MarketEvent` yet.
+- Each side of the book is a `std::map`. It's simple and benchmarks at ~17M events/sec, far beyond any real feed's rate. An array indexed by tick is the Phase 8 upgrade path if profiling ever shows a need (see the README performance log).
 - The recording format will be a simple CSV, which is human-readable and easy to load in Python or a spreadsheet for Phase 7.
 - No external dependencies besides GoogleTest (tests only).
