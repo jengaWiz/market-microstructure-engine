@@ -21,6 +21,7 @@ This is a research and learning tool. It does **not** trade, submit orders, or r
 - [Project layout](#project-layout)
 - [Building](#building)
 - [Running tests](#running-tests)
+- [Benchmarks and performance log](#benchmarks-and-performance-log)
 - [Dependencies](#dependencies)
 
 ---
@@ -136,6 +137,7 @@ include/        Public headers, one folder per component
   research/     FeatureEngine    (OrderBook -> features)
 src/            Implementations, mirroring include/, plus main.cpp
 tests/          GoogleTest unit tests
+bench/          Performance benchmarks
 data/raw/       Recorded market events (not committed to git)
 data/processed/ Computed features (not committed to git)
 docs/           Design notes; start with docs/architecture.md
@@ -173,6 +175,26 @@ Or run the test binary directly, which gives more detailed GoogleTest output:
 ```
 
 To build without tests (and skip the GoogleTest download), configure with `-DMME_BUILD_TESTS=OFF`.
+
+## Benchmarks and performance log
+
+`mme_bench` measures how fast the order book applies events. It runs 1,000,000 generated L2 updates through `OrderBook::apply()`. The updates are clustered near the top of the book, 20% of them remove a level, and a fixed random seed means every run sees the same events. The book starts from a 200-level snapshot, and the benchmark reports the median of 5 runs.
+
+Always benchmark a **Release** build. Debug builds are several times slower and don't reflect real performance.
+
+```bash
+cmake -S . -B build-release -DCMAKE_BUILD_TYPE=Release
+cmake --build build-release --target mme_bench
+./build-release/mme_bench            # or: ./build-release/mme_bench 5000000
+```
+
+The benchmark is rerun at the end of every phase, so changes in speed are visible over time. CI only smoke-tests it, because shared CI machines give noisy numbers.
+
+### Performance log
+
+| Phase | Date | Change | Machine | ns / event | Events / sec |
+|-------|------|--------|---------|-----------:|-------------:|
+| 2 | 2026-10-02 | Baseline: `std::map` book, integer ticks and lots | Apple M3, macOS 15.0, Apple Clang 16, `-O2` | 59.0 | ~17.0 M |
 
 ## Dependencies
 

@@ -25,3 +25,8 @@ jobs:
 
       - name: Test
         run: ctest --test-dir build --output-on-failure
+
+      # Smoke test only: CI machines are shared and this is a Debug build, so
+      # the numbers mean nothing. It just checks the benchmark still runs.
+      - name: Benchmark smoke test
+        run: ./build/mme_bench 10000

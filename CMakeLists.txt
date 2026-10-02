@@ -21,6 +21,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 option(MME_BUILD_TESTS "Build the unit tests" ON)
+option(MME_BUILD_BENCH "Build the benchmarks" ON)
 
 # Warning flags shared by every target we own.
 if(MSVC)
@@ -50,6 +51,15 @@ target_compile_options(mme_core PRIVATE ${MME_WARNINGS})
 add_executable(mme src/main.cpp)
 target_link_libraries(mme PRIVATE mme_core)
 target_compile_options(mme PRIVATE ${MME_WARNINGS})
+
+# ---------------------------------------------------------------------------
+# Benchmarks (plain executables; run them from a Release build)
+# ---------------------------------------------------------------------------
+if(MME_BUILD_BENCH)
+    add_executable(mme_bench bench/orderbook_benchmark.cpp)
+    target_link_libraries(mme_bench PRIVATE mme_core)
+    target_compile_options(mme_bench PRIVATE ${MME_WARNINGS})
+endif()
 
 # ---------------------------------------------------------------------------
 # Tests (GoogleTest, downloaded at configure time)
