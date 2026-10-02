@@ -15,6 +15,10 @@ MarketEvent update(Side side, Price price, Quantity quantity) {
     return MarketEvent{0, EventType::Update, price, quantity, side};
 }
 
+MarketEvent snapshot(Side side, Price price, Quantity quantity) {
+    return MarketEvent{0, EventType::Snapshot, price, quantity, side};
+}
+
 }  // namespace
 
 TEST(OrderBookTest, NewBookIsEmpty) {
@@ -167,6 +171,52 @@ TEST(OrderBookTest, TopLevelsRespectDepth) {
 
     // Asking for more levels than exist returns all of them.
     EXPECT_EQ(book.topBids(10).size(), 3u);
+}
+
+TEST(OrderBookTest, SnapshotBuildsBook) {
+    OrderBook book;
+
+    book.apply(snapshot(Side::Buy, 100, 2));
+    book.apply(snapshot(Side::Buy, 99, 4));
+    book.apply(snapshot(Side::Sell, 101, 1));
+    book.apply(snapshot(Side::Sell, 102, 3));
+
+    EXPECT_EQ(book.bidLevelCount(), 2u);
+    EXPECT_EQ(book.askLevelCount(), 2u);
+    EXPECT_EQ(book.bestBid()->price, 100);
+    EXPECT_EQ(book.bestBid()->quantity, 2);
+    EXPECT_EQ(book.bestAsk()->price, 101);
+    EXPECT_EQ(book.bestAsk()->quantity, 1);
+}
+
+TEST(OrderBookTest, UpdatesApplyOnTopOfSnapshot) {
+    OrderBook book;
+    book.apply(snapshot(Side::Buy, 100, 2));
+    book.apply(snapshot(Side::Sell, 101, 1));
+
+    book.apply(update(Side::Buy, 100, 7));
+    book.apply(update(Side::Sell, 101, 0));
+
+    EXPECT_EQ(book.bestBid()->quantity, 7);
+    EXPECT_FALSE(book.bestAsk().has_value());
+}
+
+TEST(OrderBookTest, ClearThenSnapshotRemovesStaleLevels) {
+    OrderBook book;
+    book.apply(snapshot(Side::Buy, 100, 2));
+    book.apply(snapshot(Side::Buy, 98, 5));  // gone by the next snapshot
+    book.apply(snapshot(Side::Sell, 101, 1));
+
+    // A new snapshot replaces the whole book, so the caller clears first.
+    book.clear();
+    book.apply(snapshot(Side::Buy, 100, 3));
+    book.apply(snapshot(Side::Sell, 101, 1));
+
+    // Only the new snapshot's bid is left; the stale level at 98 is gone.
+    const std::vector<Order> bids = book.topBids(10);
+    ASSERT_EQ(bids.size(), 1u);
+    EXPECT_EQ(bids[0].price, 100);
+    EXPECT_EQ(bids[0].quantity, 3);
 }
 
 TEST(OrderBookTest, ClearRemovesEveryLevel) {
