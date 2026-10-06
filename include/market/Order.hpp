@@ -1,5 +1,7 @@
 #pragma once
 
+#include "market/Units.hpp"
+
 namespace mme {
 
 // Which side of the book an order or price level belongs to.
@@ -22,12 +24,10 @@ inline const char* toString(Side side) {
 // Order here usually describes one aggregated price level, for example
 // "5.2 BTC bid at 60000.00".
 //
-// TODO(Phase 2): Prices are stored as double for readability. Once the order
-// book is implemented, consider switching to integer "ticks" to avoid
-// floating-point comparison problems (e.g. 0.1 + 0.2 != 0.3).
+// Price is in ticks and quantity is in lots (see Units.hpp).
 struct Order {
-    double price = 0.0;
-    double quantity = 0.0;
+    Price price = 0;
+    Quantity quantity = 0;
     Side side = Side::Buy;
 };
 

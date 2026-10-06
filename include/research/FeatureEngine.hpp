@@ -4,10 +4,12 @@
 #include <optional>
 
 #include "market/OrderBook.hpp"
+#include "market/Units.hpp"
 
 namespace mme {
 
-// All features computed from one order-book state.
+// All features computed from one order-book state, in real units
+// (e.g. dollars), ready for research output.
 // A feature is std::nullopt when it cannot be computed (e.g. an empty book).
 struct MarketFeatures {
     std::optional<double> bestBid;
@@ -21,8 +23,13 @@ struct MarketFeatures {
 //
 // The FeatureEngine only reads the book; it never changes it. Every method is
 // a pure calculation, so the same book always gives the same features.
+//
+// The book stores prices in ticks. The FeatureEngine converts them to real
+// prices, so it needs the instrument's tick size.
 class FeatureEngine {
 public:
+    explicit FeatureEngine(TickSize tickSize);
+
     // Price of the highest bid / lowest ask.
     std::optional<double> bestBid(const OrderBook& book) const;
     std::optional<double> bestAsk(const OrderBook& book) const;
@@ -44,6 +51,9 @@ public:
 
     // Computes every feature above in one call.
     MarketFeatures compute(const OrderBook& book) const;
+
+private:
+    TickSize tickSize_;
 };
 
 }  // namespace mme

@@ -129,7 +129,7 @@ Put simply: when there is noticeably more buying interest than selling interest 
 
 ```
 include/        Public headers, one folder per component
-  market/       Order, MarketEvent, OrderBook
+  market/       Units, Order, MarketEvent, OrderBook
   feed/         MarketDataFeed   (live exchange -> MarketEvent)
   recorder/     EventRecorder    (MarketEvent -> disk)
   replay/       ReplayEngine     (disk -> MarketEvent)

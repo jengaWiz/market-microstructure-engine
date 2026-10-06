@@ -1,13 +1,14 @@
 #include <gtest/gtest.h>
 
 #include "market/OrderBook.hpp"
+#include "market/Units.hpp"
 #include "research/FeatureEngine.hpp"
 
 namespace mme {
 
 TEST(FeatureEngineTest, EmptyBookProducesNoFeatures) {
     const OrderBook book;
-    const FeatureEngine engine;
+    const FeatureEngine engine(TickSize{0.01});
 
     const MarketFeatures features = engine.compute(book);
 

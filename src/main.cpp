@@ -11,12 +11,18 @@
 #include "feed/MarketDataFeed.hpp"
 #include "market/MarketEvent.hpp"
 #include "market/OrderBook.hpp"
+#include "market/Units.hpp"
 #include "recorder/EventRecorder.hpp"
 #include "research/FeatureEngine.hpp"
 
 int main() {
+    // BTC-USD on Coinbase: prices move in $0.01 steps.
+    // TODO(Phase 3): The feed will also need the lot size (0.00000001 BTC) to
+    // convert exchange quantities into whole lots.
+    const mme::TickSize btcUsdTick{0.01};
+
     mme::OrderBook book;
-    mme::FeatureEngine features;
+    mme::FeatureEngine features(btcUsdTick);
     mme::EventRecorder recorder("data/raw/events.csv");
     mme::MarketDataFeed feed("BTC-USD");
 
